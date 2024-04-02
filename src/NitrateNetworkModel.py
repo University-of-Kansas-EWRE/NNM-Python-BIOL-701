@@ -18,8 +18,8 @@ from StreamModels import StreamModel, ModelConstants, NetworkConstants, ModelVar
 
 from nnm import * #might be a better way to do this; Julia code seems to have imported all of nnm
 
-from nnm_io import ModelConstants, NetworkConstants, ModelVariables, StreamModel, evaluate, get_outlet_nconc, get_avg_nconc, get_average_nconc, get_delivery_ratios, reset_model_vars
-from nnm_io import load_data_from_dir, load_model_from_matlab_dump, save_constants, load_constants, save_model_results, build_network, save_model_variables
+from nnm_io import  ModelConstants, StreamModel, NetworkConstants, ModelVariables
+from nnm_io import  get_delivery_ratios, save_constants, load_constants, save_model_results, save_model_variables
 
 #from operators import * 
 

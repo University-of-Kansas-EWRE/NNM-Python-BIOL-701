@@ -1,8 +1,14 @@
 
-from StreamModels import ModelConstants
-import pandas as pd
+from StreamModels import ModelConstants, ModelVariables, NetworkConstants
+from nnm import get_delivery_ratios, init_model_vars 
 import pickle
+import pandas as pd
 
+#check working directory -- right now the code's working directory is the directory containing the local repo 
+#would be better to provide an absolute path for future reference 
+import os
+print("Current working directory:", os.getcwd())
+print("Does the file exist?", os.path.exists('base_params.csv'))
 
 """
     StreamModel(baseparams_file::String, network_file::String)
@@ -47,32 +53,31 @@ def StreamModel(baseparams_file, network_file):
     is_hw = netdf['is_hw'] #retrieves the is_hw column from the DF
     hw_links = [l for l in range(1, n_links + 1) if is_hw[l - 1] == 1] #list of links, is_hw =1 
 
+    nc = NetworkConstants(
+            n_links = n_links,
+            outlet_link = baseparams["outlet_link"],
+            gage_link = baseparams["gage_link"],
+            gage_flow = baseparams["gage_flow"],
+            feature = netdf.feature,
+            to_node = netdf.to_node,
+            us_area = netdf.us_area,
+            contrib_area = netdf.contrib_area,
+            contrib_subwatershed = netdf.swat_sub,
+            contrib_n_load_factor = [1] * n_links,
+            routing_order = routing_order,
+            hw_links = hw_links,
+            slope = netdf.slope,
+            link_len = netdf.link_len,
+            wetland_area = netdf.wetland_area,
+            pEM = netdf.pEM,
+            fainN = netdf.fainN,
+            fainC = netdf.fainC,
+            # optional values
+            B_gage = baseparams["B_gage"] if "B_gage" in baseparams else -1,
+            B_us_area = baseparams["B_us_area"] if "B_us_area" in baseparams else -1.0
+        )
 
-    class NetworkConstants:
-        def __init__(self, n_links, outlet_link,gage_link, gage_flow, feature, to_node, us_area, contrib_area, contrib_subwatershed, contrib_n_load_factor, routing_order, hw_links, slope, link_len, wetland_area, pEM, fainN, fainC, B_gage, B_us_area):
-            self.n_links = n_links
-            self.outlet_link = baseparams["outlet_link"]
-            self.gage_link = baseparams["gage_link"]
-            self.gage_flow = baseparams["gage_flow"]
-            self.feature = feature
-            self.to_node = to_node
-            self.us_area = us_area
-            self.contrib_area = contrib_area
-            self.contrib_subwatershed = contrib_subwatershed
-            self.contrib_n_load_factor = contrib_n_load_factor
-            self.routing_order = routing_order
-            self.hw_links = hw_links
-            self.slope = slope
-            self.link_len = link_len
-            self.wetland_area = wetland_area
-            self.pEM = pEM
-            self.fainN = fainN
-            self.fainC = fainC
-            #optional values
-            B_gage = baseparams.get("B_gage", -1)
-            B_us_area = baseparams.get("B_us_area", -1.0)
-
-    mv = init_model_vars(nc.n_links) #just need to make sure this is defined elsewhere in the codebase
+    mv = init_model_vars(nc.n_links) #nc is an isntance of NetworkConstants but NetworkConstatnts doesn't have any instances yet 
 
     return StreamModel(mc, nc, mv)
 

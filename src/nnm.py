@@ -275,12 +275,12 @@ def compute_N_C_conc(model, contrib_n_load_reduction=None):
 
 #= Solution querying functions =#
 """
-    get_outlet_nconc(model::StreamModel)::Float64
+    get_outlet_n_conc(model::StreamModel)::Float64
 
 Gets nitrate concentration leaving outlet link
 """
 
-def get_outlet_nconc(model):
+def get_outlet_n_conc(model):
     #unpack mv
     mv = model.mv
     mc = model.mc
@@ -289,7 +289,7 @@ def get_outlet_nconc(model):
     return mv.N_conc_ds[nc.outlet_link] #this line might be wrong, might be     return mv['N_conc_ds'][nc['outlet_link']]
 
 """
-    get_avg_nconc(model::StreamModel)::Float64
+    get_avg_n_conc(model::StreamModel)::Float64
 
 Gets link length-weighted nitrate concentration
 """
@@ -305,8 +305,8 @@ def get_average_nconc(model):
     return tot_len_w_nconc / tot_len
 
 
-def get_avg_nconc(model): #confused on why this is here
-    return get_average_nconc(model)
+def get_avg_n_conc(model): #confused on why this is here
+    return get_average_n_conc(model)
 
 """
     get_delivery_ratios(model::StreamModel)::Tuple{Vector{Float64}, Vector{Float64}}

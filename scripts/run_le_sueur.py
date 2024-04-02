@@ -1,11 +1,9 @@
 
 import os
-
 import sys
 
-
 # Get the absolute path of the current script's directory
-script_dir = os.path.dirname(os.path.abspath('run_le_sueur.ipynb'))
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Append the "src" directory to the script's directory
 src_dir = os.path.join(script_dir, '..', 'src')
@@ -15,7 +13,7 @@ sys.path.insert(0, src_dir)
 
 print(sys.path)
 
-import NitrateNetworkModel
+import NitrateNetworkModel #I don't think that I can import this until I resolve the base_param issues that its depndent files are having! This module needs to actually run in order to be imported, I think 
 
 workspace = "../data/LeSueur"
 
