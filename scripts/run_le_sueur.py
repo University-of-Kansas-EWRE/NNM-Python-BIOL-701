@@ -13,7 +13,9 @@ sys.path.insert(0, src_dir)
 
 print(sys.path)
 
-import NitrateNetworkModel #I don't think that I can import this until I resolve the base_param issues that its depndent files are having! This module needs to actually run in order to be imported, I think 
+#import NitrateNetworkModel #I don't think that I can import this until I resolve the base_param issues that its depndent files are having! This module needs to actually run in order to be imported, I think 
+from NitrateNetworkModel import StreamModel, nnm_eval, save_model_results #, FlowRegime
+
 
 workspace = "../data/LeSueur"
 
@@ -25,14 +27,14 @@ def resultpath(basename):
 
 
 def main():
-    sm = NitrateNetworkModel.StreamModel(
+    sm = StreamModel(
         inputpath("base_params.csv"), 
         inputpath("network_table.csv"),
         inputpath("base_results.csv") 
 
     )
-    sm.evaluate() #streammodel object has no attribute evaluate
-    sm.save_model_results(resultpath("base_results.csv"))
+    nnm_eval(sm) #I'm not sure WHICH evaluate function this is referring to -- I'll assume nnm_eval?
+    save_model_results(sm, resultpath("base_results.csv")) #fncn defined in nnm_io
 
     #If you want to evaluate the model with different flow regimes:
     #flowregime = NitrateNetworkModel.FlowRegime(inputpath("flow_values.csv"))

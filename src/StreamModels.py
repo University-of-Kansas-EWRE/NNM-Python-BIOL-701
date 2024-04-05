@@ -6,6 +6,7 @@
 #type annotations allow you to use mypy to check for type errors in your code.
 
 import pandas as pd
+#from nnm import init_model_vars #this is going to create some circular dependencies; nnm.py is importing StreamModel and now StreamModels.py is importing something from nnm.py
 
 #from nnm_io
 def read_baseparams(baseparams_file):

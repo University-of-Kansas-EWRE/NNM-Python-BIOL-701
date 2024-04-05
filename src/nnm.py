@@ -24,10 +24,10 @@ a funny asymmetry in how different model parameters are handled.
 
 import numpy as np
 import math
-import StreamModels
+from StreamModels import StreamModel
 
-def evaluate3(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is the flow at the gage link
-    StreamModels.reset_model_vars(model) #this is defined in StreamModels -- need that imported before calling it!
+def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is the flow at the gage link
+    StreamModel.reset_model_vars(model) #this is defined in StreamModels -- need that imported before calling it!
     if math.isnan(qgage):
         assign_qQ(model, model.nc.gage_flow) #used if qgage is not provided
     else:
@@ -45,7 +45,7 @@ Returns a new `ModelVariables` instance with zero-initialized vectors.
 
 #set up an object that contains all the model variables with their arrays set to zeros
 def init_model_vars(n_links):
-    mv = StreamModels.ModelVariables(                              #creates a model variables object, so when you call init_model_vars, you get a ModelVariables object
+    mv = StreamModel.ModelVariables(                              #creates a model variables object, so when you call init_model_vars, you get a ModelVariables object
         q = [0.0 for i in range(n_links)],            # flow from contrib area
         Q_in = [0.0 for i in range(n_links)],         # channel flow from upstream
         Q_out = [0.0 for i in range(n_links)],        # channel flow to downstream
@@ -305,8 +305,8 @@ def get_average_nconc(model):
     return tot_len_w_nconc / tot_len
 
 
-def get_avg_n_conc(model): #confused on why this is here
-    return get_average_n_conc(model)
+#def get_avg_n_conc(model): #confused on why this is here
+    #return get_average_n_conc(model)
 
 """
     get_delivery_ratios(model::StreamModel)::Tuple{Vector{Float64}, Vector{Float64}}
