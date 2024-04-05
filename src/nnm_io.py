@@ -1,5 +1,5 @@
 
-from StreamModels import ModelConstants, ModelVariables, NetworkConstants
+from StreamModels import ModelConstants, ModelVariables, NetworkConstants, StreamModel
 from nnm import get_delivery_ratios, init_model_vars 
 import pickle
 import pandas as pd
@@ -30,56 +30,9 @@ baseparams = read_baseparams('base_params.csv')
 #I temporariliy changed it to network_table.csv and put that data in the src file
 #baseparams is not defined -- I think it comes from StreamModel.py
 
-def StreamModel(baseparams_file, network_file):
-    baseparams = read_baseparams(baseparams_file)
-    mc = ModelConstants(
-        a1 = baseparams["a1"],
-        a2 = baseparams["a2"],
-        b1 = baseparams["b1"],
-        b2 = baseparams["b2"],
-        Qbf = baseparams["Qbf"],
-        agN = baseparams["agN"],
-        agC = baseparams["agC"],
-        agCN = baseparams["agCN"],
-        g = baseparams["g"],
-        n = baseparams["n"],
-        Jleach = baseparams["Jleach"]
-    )
 
-    netdf = pd.read_csv('network_table.csv') #reads network file into a pandas dataframe
-    n_links = int(baseparams["n_links"]) #retrieves the number of links from the baseparams dictionary
-    routing_depth = netdf['routing_depth'] #gets the routing depth from the DF
-    routing_order = sorted(range(1, n_links + 1), key=lambda x: (routing_depth[x - 1], n_links - x), reverse=True) #sorts the links based on their routing depth and index
-    is_hw = netdf['is_hw'] #retrieves the is_hw column from the DF
-    hw_links = [l for l in range(1, n_links + 1) if is_hw[l - 1] == 1] #list of links, is_hw =1 
 
-    nc = NetworkConstants(
-            n_links = n_links,
-            outlet_link = baseparams["outlet_link"],
-            gage_link = baseparams["gage_link"],
-            gage_flow = baseparams["gage_flow"],
-            feature = netdf.feature,
-            to_node = netdf.to_node,
-            us_area = netdf.us_area,
-            contrib_area = netdf.contrib_area,
-            contrib_subwatershed = netdf.swat_sub,
-            contrib_n_load_factor = [1] * n_links,
-            routing_order = routing_order,
-            hw_links = hw_links,
-            slope = netdf.slope,
-            link_len = netdf.link_len,
-            wetland_area = netdf.wetland_area,
-            pEM = netdf.pEM,
-            fainN = netdf.fainN,
-            fainC = netdf.fainC,
-            # optional values
-            B_gage = baseparams["B_gage"] if "B_gage" in baseparams else -1,
-            B_us_area = baseparams["B_us_area"] if "B_us_area" in baseparams else -1.0
-        )
 
-    mv = init_model_vars(nc.n_links) #nc is an isntance of NetworkConstants but NetworkConstatnts doesn't have any instances yet 
-
-    return StreamModel(mc, nc, mv)
 
 "Load either a YAML or CSV (legacy) baseparams file to a Dict"
 

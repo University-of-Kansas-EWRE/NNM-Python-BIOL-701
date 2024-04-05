@@ -27,9 +27,11 @@ def resultpath(basename):
 def main():
     sm = NitrateNetworkModel.StreamModel(
         inputpath("base_params.csv"), 
-        inputpath("network_table.csv")
+        inputpath("network_table.csv"),
+        inputpath("base_results.csv") 
+
     )
-    sm.evaluate()
+    sm.evaluate() #streammodel object has no attribute evaluate
     sm.save_model_results(resultpath("base_results.csv"))
 
     #If you want to evaluate the model with different flow regimes:
