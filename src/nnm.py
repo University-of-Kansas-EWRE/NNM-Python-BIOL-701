@@ -43,33 +43,6 @@ def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is t
 Returns a new `ModelVariables` instance with zero-initialized vectors.
 """
 
-#set up an object that contains all the model variables with their arrays set to zeros
-def init_model_vars(n_links):
-    mv = StreamModel.ModelVariables(                              #creates a model variables object, so when you call init_model_vars, you get a ModelVariables object
-        q = [0.0 for i in range(n_links)],            # flow from contrib area
-        Q_in = [0.0 for i in range(n_links)],         # channel flow from upstream
-        Q_out = [0.0 for i in range(n_links)],        # channel flow to downstream
-        B = [0.0 for i in range(n_links)],            # channel width
-        U = [0.0 for i in range(n_links)],
-        H = [0.0 for i in range(n_links)],
-        N_conc_ri = [0.0 for i in range(n_links)],    # [N] in q from land inputs
-        N_conc_us = [0.0 for i in range(n_links)],    # [N] in Q_in from upstream
-        N_conc_ds = [0.0 for i in range(n_links)],    # [N] in Q_out
-        N_conc_in = [0.0 for i in range(n_links)],
-        C_conc_ri = [0.0 for i in range(n_links)],    # same as N
-        C_conc_us = [0.0 for i in range(n_links)],
-        C_conc_ds = [0.0 for i in range(n_links)],
-        C_conc_in = [0.0 for i in range(n_links)],
-        mass_N_in = [0.0 for i in range(n_links)],
-        mass_N_out = [0.0 for i in range(n_links)],
-        mass_C_in = [0.0 for i in range(n_links)],
-        mass_C_out = [0.0 for i in range(n_links)],
-        cn_rat = [0.0 for i in range(n_links)],
-        jden = [0.0 for i in range(n_links)]          # denitrification rate
-    )
-    return mv   
-
-
 
 """
     assign_qQ!(model::StreamModel, q_gage::Float64)

@@ -1,6 +1,6 @@
 
-from StreamModels import ModelConstants, ModelVariables, NetworkConstants, StreamModel
-from nnm import get_delivery_ratios, init_model_vars 
+from StreamModels import ModelConstants, ModelVariables, NetworkConstants, StreamModel 
+from nnm import get_delivery_ratios
 import pickle
 import pandas as pd
 
