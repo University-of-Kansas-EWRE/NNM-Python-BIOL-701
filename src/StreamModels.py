@@ -8,12 +8,15 @@
 import pandas as pd
 #from nnm import init_model_vars #this is going to create some circular dependencies; nnm.py is importing StreamModel and now StreamModels.py is importing something from nnm.py
 
-#from nnm_io
-def read_baseparams(baseparams_file):
-    df = pd.read_csv(baseparams_file, header=None, index_col=0)
-    return df.squeeze('columns').to_dict()
+#import sys
+#print(sys.version)
 
-baseparams = read_baseparams('base_params.csv')
+#from nnm_io 
+#def read_baseparams(baseparams_file):
+    #df = pd.read_csv(baseparams_file, header=None, index_col=0)
+    #df = df.values
+    #return df.squeeze('columns').to_dict()
+
 
 class ModelConstants:
     def __init__(self, a1, a2, b1, b2, Qbf, agN=30.0, agC=90.0, agCN=4.5, g=9.81, n=0.035, Jleach=85/3600):
@@ -105,23 +108,44 @@ class StreamModel:
         self.nc = nc #network constants
         self.mv = mv
         #return cls(mc, nc, mv) I am not sure where this line should go now that I've changed a lot
+        #it method reads CSV file into pandas df
+
+        #self.baseparams = read_baseparams('base_params.csv')
+        self.baseparams = pd.read_csv('base_params.csv', header=None, index_col=0).T #import and transpose
+        self.n_links = int(self.baseparams.get("n_links", 0))  # Use get to handle missing keys
+
+        self.netdf = pd.read_csv('network_table.csv')
+        self.routing_depth = self.netdf['routing_depth'] #gets the routing depth from the DF 
+        self.routing_depth = self.routing_depth.values
+        self.routing_order = sorted(range(1, self.n_links + 1), key=lambda x: (self.routing_depth[x - 1], self.n_links - x), reverse=True) #sorts the links based on their routing depth and index
+        self.is_hw = self.netdf['is_hw'] #retrieves the is_hw column from the DF
+        self.hw_links = [l for l in range(1, self.n_links + 1) if self.is_hw[l - 1] == 1] #list of links, is_hw =1 
+
+        self.a1 = self.baseparams["a1"]
+        self.a2 = self.baseparams["a2"]
+        self.b1 = self.baseparams["b1"]
+        self.b2 = self.baseparams["b2"]
+        self.Qbf = self.baseparams["Qbf"]
+        self.agN = self.baseparams["agN"]
+        self.agC = self.baseparams["agC"]
+        self.agCN = self.baseparams["agCN"]
+        self.g = self.baseparams["g"]
+        self.n = self.baseparams["n"]
+        self.Jleach = self.baseparams["Jleach"]
 
 
-    @classmethod #factory method; cretes a new StreamModel instance from the two files it imports
-    def from_files(cls, baseparams_file, network_file):
-        baseparams = read_baseparams(baseparams_file)
         mc = ModelConstants(
-            a1=baseparams.get("a1", 0.0),  # Using get to handle missing keys
-            a2=baseparams.get("a2", 0.0),
-            b1=baseparams.get("b1", 0.0),
-            b2=baseparams.get("b2", 0.0),
-            Qbf=baseparams.get("Qbf", 0.0),
-            agN=baseparams.get("agN", 30.0),
-            agC=baseparams.get("agC", 90.0),
-            agCN=baseparams.get("agCN", 4.5),
-            g=baseparams.get("g", 9.81),
-            n=baseparams.get("n", 0.035),
-            Jleach=baseparams.get("Jleach", 85 / 3600)
+            a1=self.baseparams.get("a1", 0.0),  # Using get to handle missing keys
+            a2=self.baseparams.get("a2", 0.0),
+            b1=self.baseparams.get("b1", 0.0),
+            b2=self.baseparams.get("b2", 0.0),
+            Qbf=self.baseparams.get("Qbf", 0.0),
+            agN=self.baseparams.get("agN", 30.0),
+            agC=self.baseparams.get("agC", 90.0),
+            agCN=self.baseparams.get("agCN", 4.5),
+            g=self.baseparams.get("g", 9.81),
+            n=self.baseparams.get("n", 0.035),
+            Jleach=self.baseparams.get("Jleach", 85 / 3600)
     )
         
         #set up an object that contains all the model variables with their arrays set to zeros
@@ -149,49 +173,41 @@ class StreamModel:
             jden = [0.0 for i in range(n_links)]          # denitrification rate
         )
 
-        return mv   
-
-
-    #init method reads CSV file into pandas df
-    netdf = pd.read_csv('network_table.csv')
-    n_links = int(baseparams.get("n_links", 0))  # Use get to handle missing keys
-    routing_depth = netdf['routing_depth'] #gets the routing depth from the DF
-    print("routing_depth:", routing_depth)  # Debug print
-    routing_order = sorted(range(1, n_links + 1), key=lambda x: (routing_depth[x - 1], n_links - x), reverse=True) #sorts the links based on their routing depth and index
-    is_hw = netdf['is_hw'] #retrieves the is_hw column from the DF
-    hw_links = [l for l in range(1, n_links + 1) if 'is_hw'[l - 1] == 1] #list of links, is_hw =1 
-
-        
-        #creates an instance of Network Constants
-    nc = NetworkConstants(
-        n_links = n_links,
-        outlet_link = baseparams["outlet_link"],
-        gage_link = baseparams["gage_link"],
-        gage_flow = baseparams["gage_flow"],
-        feature = netdf.feature,
-        to_node = netdf.to_node,
-        us_area = netdf.us_area,
-        contrib_area = netdf.contrib_area,
-        contrib_subwatershed = netdf.swat_sub,
-        contrib_n_load_factor = [1] * n_links,
-        routing_order = routing_order,
-        hw_links = hw_links,
-        slope = netdf.slope,
-        link_len = netdf.link_len,
-        wetland_area = netdf.wetland_area,
-        pEM = netdf.pEM,
-        fainN = netdf.fainN,
-        fainC = netdf.fainC,
-        # optional values
-        B_gage = baseparams["B_gage"] if "B_gage" in baseparams else -1,
-        B_us_area = baseparams["B_us_area"] if "B_us_area" in baseparams else -1.0
+    
+        #creates an instance of Network Constants -- THIS FUNCTION IS CAUSING the NONE error in reset_model_vars function later and attribute error in create_model_vars function later
+    def create_network_constants_instance(self, nc): #I'm not sure if this data is organized in the right way
+        self.nc = nc #assigns value of nc parameter to the nc attribute of the streammodel instance
+        nc = NetworkConstants( 
+            n_links = self.n_links,
+            outlet_link = self.baseparams["outlet_link"],
+            gage_link = self.baseparams["gage_link"],
+            gage_flow = self.baseparams["gage_flow"],
+            feature = self.netdf.feature,
+            to_node = self.netdf.to_node,
+            us_area = self.netdf.us_area,
+            contrib_area = self.netdf.contrib_area,
+            contrib_subwatershed = self.netdf.swat_sub,
+            contrib_n_load_factor = [1] * self.n_links,
+            routing_order = self.routing_order,
+            hw_links = self.hw_links,
+            slope = self.netdf.slope, 
+            link_len = self.netdf.link_len,
+            wetland_area = self.netdf.wetland_area,
+            pEM = self.netdf.pEM,
+            fainN = self.netdf.fainN,
+            fainC = self.netdf.fainC,
+            # optional values
+            B_gage = self.baseparams["B_gage"] if "B_gage" in self.baseparams else -1,
+            B_us_area = self.baseparams["B_us_area"] if "B_us_area" in self.baseparams else -1.0
         )
+        return nc
         
         
-    #creates an instance of model variables
-    mv = init_model_vars(nc.n_links) #nc is an isntance of NetworkConstants but NetworkConstatnts doesn't have any instances yet 
+    def create_model_variables_instance(self):
+        mv = StreamModel.init_model_vars(self.nc.n_links)  
+        return mv
 
-    #return StreamModel(mc, nc, mv)
+#return StreamModel(mc, nc, mv) #I don't know where to put this line
     
     """
     reset_model_vars!(model::StreamModel)
@@ -200,28 +216,31 @@ Sets all values in all arrays in mv to 0.0. This way we don't have to
 allocate a new ModelVariables object to rerun.
 """
 
-#I was having trouble here -- error is that self.mv.q is a string value instead of an instance of ModelVariables
+def reset_model_vars(stream_model): #right now this is not a method of StreamModel class, as was the case in the Julia version. In Julia this just operates on a StreamModel object
+    #stream_model is an instance of the StreamModel class that we are creating here
+    mv = stream_model.create_model_variables_instance().mv
+    mv.q = 0.0
+    mv.Q_in = 0.0
+    mv.Q_out = 0.0
+    mv.B = 0.0
+    mv.U = 0.0
+    mv.H = 0.0
+    mv.N_conc_ri = 0.0
+    mv.N_conc_us = 0.0
+    mv.N_conc_ds = 0.0
+    mv.N_conc_in = 0.0
+    mv.C_conc_ri = 0.0
+    mv.C_conc_us = 0.0
+    mv.C_conc_ds = 0.0
+    mv.C_conc_in = 0.0
+    mv.mass_N_in = 0.0
+    mv.mass_N_out = 0.0
+    mv.mass_C_in = 0.0
+    mv.mass_C_out = 0.0
+    mv.cn_rat = 0.0
+    mv.jden = 0.0
 
-def reset_model_vars(self):
-    self.mv.q = 0.0
-    self.mv.Q_in = 0.0
-    self.mv.Q_out = 0.0
-    self.mv.B = 0.0
-    self.mv.U = 0.0
-    self.mv.H = 0.0
-    self.mv.N_conc_ri = 0.0
-    self.mv.N_conc_us = 0.0
-    self.mv.N_conc_ds = 0.0
-    self.mv.N_conc_in = 0.0
-    self.mv.C_conc_ri = 0.0
-    self.mv.C_conc_us = 0.0
-    self.mv.C_conc_ds = 0.0
-    self.mv.C_conc_in = 0.0
-    self.mv.mass_N_in = 0.0
-    self.mv.mass_N_out = 0.0
-    self.mv.mass_C_in = 0.0
-    self.mv.mass_C_out = 0.0
-    self.mv.cn_rat = 0.0
-    self.mv.jden = 0.0
+    return
 
 
+#return StreamModel(mc, nc, mv) #I don't know where to put this line
