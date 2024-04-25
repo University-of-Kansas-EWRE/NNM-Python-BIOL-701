@@ -202,7 +202,7 @@ class StreamModel:
         )
         return nc
         
-        
+ #ASk ChatGPT for advice on what kind of debugger I should use to fix this particular error and work with my device!!        
     def create_model_variables_instance(self):
         mv = StreamModel.init_model_vars(self.nc.n_links)  
         return mv

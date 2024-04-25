@@ -19,15 +19,20 @@ potential performance regressions. I should test that, since this is introduces
 a funny asymmetry in how different model parameters are handled. 
 """
 
+
+#could test this by manually inputting StreamModels structure and getting expected output via nnm.py 
+#then compare to StreamModels.py to see break point
+#potentially combine everything in one code ; just to help us see what is breaking 
+
 #julia supports multiple evaluate functions within a codebase, as long as they take different arguments
 #python does NOT! so I need to distinguish between the multiple evaluate functions in the NNM codebase in some way
 
 import numpy as np
 import math
-from StreamModels import StreamModel
+from StreamModels import StreamModel, reset_model_vars
 
 def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is the flow at the gage link
-    StreamModel.reset_model_vars(model) #this is defined in StreamModels -- need that imported before calling it!
+    reset_model_vars(model) #this is defined in StreamModels -- need that imported before calling it!
     if math.isnan(qgage):
         assign_qQ(model, model.nc.gage_flow) #used if qgage is not provided
     else:

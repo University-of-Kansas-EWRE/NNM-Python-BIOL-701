@@ -1,0 +1,16 @@
+variable,value
+a1,14.899
+a2,31.569
+b1,0.53644
+b2,0.054134
+Qbf,5
+agN,30
+agC,90
+agCN,4.5
+g,9.81
+n,0.035
+n_links,643
+outlet_link,483
+gage_link,472
+gage_flow,54
+Jleach,0.023611111
