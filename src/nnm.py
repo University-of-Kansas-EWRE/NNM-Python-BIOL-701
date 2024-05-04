@@ -1,45 +1,36 @@
-"""
-  Notes from Dr. Peter Hawthorne's Julia version:
-
-     evaluate!(model::StreamModel; qgage::Float64, contrib_n_load_reduction::Union{nothing,Array{Float64,1}})
-
-Main model function. Assumes that `model.nc` has already been updated to
-reflect the desired management scenario, e.g. updates to
-`model.nc.contrib_n_load_factor` or `model.nc.feature` and
-`model.nc.wetland_area`.
-
-If a value for qgage is provided, the model will be run using that value as
-the flow measured at the link `model.nc.gage_link`, which is used to assign
-flow values to all other links. Otherwise, the model will be run using
-`model.nc.gage_flow`.
-
-#TODO: the reason I'm doing it this way is because the nc struct is currently
-immutable. I could switch it to mutable, but I've been avoiding that due to
-potential performance regressions. I should test that, since this is introduces
-a funny asymmetry in how different model parameters are handled. 
-"""
-
-
-#could test this by manually inputting StreamModels structure and getting expected output via nnm.py 
-#then compare to StreamModels.py to see break point
-#potentially combine everything in one code ; just to help us see what is breaking 
-
-#julia supports multiple evaluate functions within a codebase, as long as they take different arguments
-#python does NOT! so I need to distinguish between the multiple evaluate functions in the NNM codebase in some way
-
 import numpy as np
+import pandas as pd
 import math
-from StreamModels import StreamModel, reset_model_vars
+from StreamModels import StreamModel
+
 
 def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is the flow at the gage link
-    reset_model_vars(model) #this is defined in StreamModels -- need that imported before calling it!
+    print('Starting evaluation with model nc instance:', model.nc)
+    #model.reset_model_vars()  ###TURN THIS BACK ON WHEN I USE FLOW REGIMES EVENTUALLY
+    print(f'Initial qgage value: {qgage}')
+
+
+    #I think the problem is right in front of me, as edivdenced by this piece of code, but I just don't udnerstand it enough
+    #for attr, value in vars(model.nc).items():
+        #print(attr, ':', value)
+
+    for attr in dir(model.nc):
+        value = getattr(model.nc, attr)
+        print("attributes of model.nc:", attr, ':', value)
+
+
+
     if math.isnan(qgage):
+        print('qgage is NaN, using default gage_flow from model.nc')
         assign_qQ(model, model.nc.gage_flow) #used if qgage is not provided
     else:
+        print(f'qgage provided: {qgage}, using it for flow calculation')
         assign_qQ(model, qgage)
+
     assign_B(model)
     determine_U_H_wetland_hydraulics(model)
     compute_N_C_conc(model, contrib_n_load_reduction=contrib_n_load_reduction)  
+    print('Evaluation completed.')
 
 
 """
@@ -378,5 +369,39 @@ def compare_network_constants(sm1, sm2):
         print("fainC_diffs", fainC_diffs)
 
 
+"""
+    save_model_results(model::StreamModel, filename::String)
+
+Writes model results to csv file
+"""
 
 
+def save_model_results(model: StreamModel, filename): #model is an instance of the class StreamModel
+    mv, mc, nc = model.mv, model.mc, model.nc
+
+    df = pd.DataFrame() #creates a new DF
+    df['link'] = range(1, nc.n_links + 1)
+    df['feature'] = nc.feature
+    df['q'] = mv.q
+    df['Q_in'] = mv.Q_in
+    df['Q_out'] = mv.Q_out
+    df['B'] = mv.B
+    df['H'] = mv.H
+    df['U'] = mv.U
+    df['Jden'] = mv.jden
+    df['cnrat'] = mv.cn_rat
+    df['N_conc_ri'] = mv.N_conc_ri
+    df['N_conc_us'] = mv.N_conc_us
+    df['N_conc_ds'] = mv.N_conc_ds
+    df['N_conc_in'] = mv.N_conc_in
+    df['C_conc_ri'] = mv.C_conc_ri
+    df['C_conc_us'] = mv.C_conc_us
+    df['C_conc_ds'] = mv.C_conc_ds
+    df['C_conc_in'] = mv.C_conc_in
+    df['mass_N_out'] = mv.mass_N_out
+    df['mass_C_out'] = mv.mass_C_out
+    ldr, lef = get_delivery_ratios(model)
+    df['link_DR'] = ldr
+    df['link_EF'] = lef
+
+    df.to_csv(filename, index=False) #writes model results to a csv file

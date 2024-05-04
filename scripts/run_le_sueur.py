@@ -12,29 +12,48 @@ src_dir = os.path.join(script_dir, '..', 'src')
 sys.path.insert(0, src_dir)
 
 print(sys.path)
+print("Source directory being added to path:", src_dir)
 
-#import NitrateNetworkModel #I don't think that I can import this until I resolve the base_param issues that its depndent files are having! This module needs to actually run in order to be imported, I think 
-from NitrateNetworkModel import StreamModel, nnm_eval, save_model_results #, FlowRegime
-
+from NitrateNetworkModel import nnm_eval, save_model_results, read_baseparams, read_network_table, init_model_vars, StreamModel
 
 workspace = "../data/LeSueur"
 
 def inputpath(basename):
-    return os.path.join(workspace, "inputs", "LeSueurNetworkData", basename)
+    path = os.path.join(workspace, "inputs", "LeSueurNetworkData", basename)
+    print(f"Constructed input path: {path}")
+    return path
 
 def resultpath(basename):
-    return os.path.join(workspace, "results", basename)
+    path = os.path.join(workspace, "results", basename)
+    print(f"Constructed result path: {path}")
+    return path
 
 
 def main():
-    sm = StreamModel(
-        inputpath("base_params.csv"), 
-        inputpath("network_table.csv"),
-        inputpath("base_results.csv") 
+    print("Starting main function.")
 
+    baseparams, n_links = read_baseparams('base_params.csv') #creates an instance of Model Constants
+
+    network_constants_instance = read_network_table('network_table.csv', n_links) #creates an instance of Network Constants
+
+    #Create instances from imported data
+    model_variables_instance = init_model_vars(int(baseparams["n_links"])) #Creates an instance of Model Variables
+
+    # Create the StreamModel instance
+    stream_model_instance = StreamModel(
+        nc=network_constants_instance,
+        mv=model_variables_instance,
+        mc=baseparams
     )
-    nnm_eval(sm) #I'm not sure WHICH evaluate function this is referring to -- I'll assume nnm_eval?
-    save_model_results(sm, resultpath("base_results.csv")) #fncn defined in nnm_io
+
+    # Additional logic can follow here, like processing or displaying the model instance
+    print("StreamModel instance created with:", stream_model_instance)
+
+    nnm_eval(stream_model_instance) #I'm not sure WHICH evaluate function this is referring to -- I'll assume nnm_eval?
+    print("Evaluation completed for StreamModel.")
+
+    save_model_results(stream_model_instance, resultpath("base_results.csv")) #fncn defined in nnm_io
+    print("Model results saved.")
 
     #If you want to evaluate the model with different flow regimes:
     #flowregime = NitrateNetworkModel.FlowRegime(inputpath("flow_values.csv"))
