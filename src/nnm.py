@@ -16,8 +16,7 @@ def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is t
 
     for attr in dir(model.nc):
         value = getattr(model.nc, attr)
-        print("attributes of model.nc:", attr, ':', value)
-
+        #print("attributes of model.nc:", attr, ':', value)
 
 
     if math.isnan(qgage):
@@ -46,6 +45,7 @@ Returns a new `ModelVariables` instance with zero-initialized vectors.
 Routes water
 """
 
+
 def assign_qQ(model, q_gage):
     q = model.mv.q
     Q_in = model.mv.Q_in
@@ -59,10 +59,29 @@ def assign_qQ(model, q_gage):
 
     contrib_q_per_area = q_gage / us_area[gage_link]
 
-    for l in routing_order[0:-1]:
+    #print("Routing order (assing_qQ function):", routing_order)
+
+    #print("Initial Q_in (before loop in assign_qQ):", Q_in)
+
+    for l in routing_order:
+        #print("Length of contrib_area:", len(contrib_area))
+        #print("Current index l:", l)
+        print(f"Processing link {l}, to_node: {to_node[l]}")
+        #print(f"Before: q[{to_node[l]}] = {q[to_node[l]]}, Q_in[{l}] = {Q_in[l]}")
+    
+        if l >= len(contrib_area):
+            print(f"Index {l} out of range for contrib_area with length {len(contrib_area)}")
+            continue  # Skip this iteration to avoid the IndexError
+
         q[l] = contrib_q_per_area * contrib_area[l]
         Q_out[l] = q[l] + Q_in[l]
         Q_in[to_node[l]] += Q_out[l]
+
+        #print(f"After: Q_in[{to_node[l]}] = {Q_in[to_node[l]]}, Q_out[{l}] = {Q_out[l]}")
+
+
+    print('Outlet link (assign_qQ function)', outlet_link)
+
     q[outlet_link] = contrib_q_per_area * contrib_area[outlet_link]
     Q_out[outlet_link] = q[outlet_link] + Q_in[outlet_link]
 
@@ -87,7 +106,7 @@ def assign_B(model):
     us_area = model.nc.us_area
     B_gage = model.nc.B_gage
     B_us_area = model.nc.B_us_area
-    B = model.mv.B
+    #B = model.mv.B
     Q_out = model.mv.Q_out
 
     # Get reference flow and upstream area
@@ -98,7 +117,7 @@ def assign_B(model):
     B_ref = a1 * Q_ref ** b1 if Q_ref < Qbf else a2 * Q_ref ** b2
 
     # Apply area-based scaling over the network
-    B = (B_ref / math.sqrt(us_area_ref)) * math.sqrt(us_area)
+    model.mv.B  = (B_ref / math.sqrt(us_area_ref)) * np.sqrt(us_area)
 
 
 """
@@ -162,49 +181,70 @@ Routes N and C, computes denitrification.
 """
 def compute_N_C_conc(model, contrib_n_load_reduction=None):
     # Unpack mc
-    agN = model.mc['agN']
-    agC = model.mc['agC']
-    agCN = model.mc['agCN']
-    Jleach = model.mc['Jleach']
+    agN = model.mc.agN
+    agC = model.mc.agC
+    agCN = model.mc.agCN
+    Jleach = model.mc.Jleach
 
     # Unpack q
-    q = model.mv['q']
-    Q_in = model.mv['Q_in']
-    Q_out = model.mv['Q_out']
-    B = model.mv['B']
-    N_conc_ri = model.mv['N_conc_ri']
-    N_conc_us = model.mv['N_conc_us']
-    N_conc_ds = model.mv['N_conc_ds']
-    N_conc_in = model.mv['N_conc_in']
-    C_conc_ri = model.mv['C_conc_ri']
-    C_conc_ds = model.mv['C_conc_ds']
-    C_conc_us = model.mv['C_conc_us']
-    C_conc_in = model.mv['C_conc_in']
-    cn_rat = model.mv['cn_rat']
-    jden = model.mv['jden']
-    mass_N_in = model.mv['mass_N_in']
-    mass_N_out = model.mv['mass_N_out']
-    mass_C_in = model.mv['mass_C_in']
-    mass_C_out = model.mv['mass_C_out']
 
-    # Unpack link_len
-    link_len = model.nc['link_len']
-    routing_order = model.nc['routing_order']
-    to_node = model.nc['to_node']
-    outlet_link = model.nc['outlet_link']
-    fainN = model.nc['fainN']
-    fainC = model.nc['fainC']
-    wetland_area = model.nc['wetland_area']
-    pEM = model.nc['pEM']
-    contrib_n_load_factor = model.nc['contrib_n_load_factor']
+    # Unpack mv using attribute access
+    q = model.mv.q
+    Q_in = model.mv.Q_in
+    Q_out = model.mv.Q_out
+    B = model.mv.B
+    N_conc_ri = model.mv.N_conc_ri
+    N_conc_us = model.mv.N_conc_us
+    N_conc_ds = model.mv.N_conc_ds
+    N_conc_in = model.mv.N_conc_in
+    C_conc_ri = model.mv.C_conc_ri
+    C_conc_ds = model.mv.C_conc_ds
+    C_conc_us = model.mv.C_conc_us
+    C_conc_in = model.mv.C_conc_in
+    cn_rat = model.mv.cn_rat
+    jden = model.mv.jden
+    mass_N_in = model.mv.mass_N_in
+    mass_N_out = model.mv.mass_N_out
+    mass_C_in = model.mv.mass_C_in
+    mass_C_out = model.mv.mass_C_out
+
+    # Unpack nc using attribute access
+    link_len = model.nc.link_len
+    routing_order = model.nc.routing_order
+    to_node = model.nc.to_node
+    outlet_link = model.nc.outlet_link
+    fainN = model.nc.fainN
+    fainC = model.nc.fainC
+    wetland_area = model.nc.wetland_area
+    pEM = model.nc.pEM
+    contrib_n_load_factor = model.nc.contrib_n_load_factor
+
+    print("Length of routing_order:", len(routing_order))
+    print("Length of Q_in:", len(Q_in))
+
+    print("Minimum index in routing_order:", min(routing_order))
+    print("Maximum index in routing_order:", max(routing_order))
+
+    if max(routing_order) >= len(Q_in):
+        raise ValueError("routing_order contains an index out of range for Q_in")
 
     if contrib_n_load_reduction is None:
         contrib_n_load = contrib_n_load_factor
 
     for l in routing_order:
         # bookkeeping
-        N_conc_us[l] = mass_N_in[l] / Q_in[l]
-        C_conc_us[l] = mass_C_in[l] / Q_in[l]
+        #print("Q_in, compute_N_C_conc function", Q_in) #right now there is an error where the headwaters, which have 0 Q_in, are diving by zero
+
+
+        #if routing_order contains incides that are out of range for Q_in, that will cause the list index out of range error ==> routing_order is longer than Q_in
+
+        #this conditional expression is necessary in python but not julia bc julia defaults to NaN or inf when dividing by zero but python doesnt'
+        if Q_in[l] == 0:
+            N_conc_us[l] = np.nan  # Assign NaN or another placeholder to indicate no calculation was possible.
+            C_conc_us[l] = np.nan
+        else:
+            N_conc_us[l] = mass_N_in[l] / Q_in[l]
+            C_conc_us[l] = mass_C_in[l] / Q_in[l]
 
         # add input from contributing areas
         N_conc_ri[l] = agN * fainN[l] * contrib_n_load[l]
@@ -233,8 +273,12 @@ def compute_N_C_conc(model, contrib_n_load_reduction=None):
         mass_N_out[l] = max(0, mass_N_in[l] - jden[l] * B[l] * link_len[l] * 1.0e-3)
 
         # bookkeeping: downstream concentration
-        N_conc_ds[l] = mass_N_out[l] / Q_out[l]
-        C_conc_ds[l] = mass_C_out[l] / Q_out[l]
+        if Q_out[l] == 0:
+            N_conc_ds[l] = np.nan
+            C_conc_ds[l] = np.nan
+        else:
+            N_conc_ds[l] = mass_N_out[l] / Q_out[l]
+            C_conc_ds[l] = mass_C_out[l] / Q_out[l]
 
         # route N and C mass downstream
         if l == outlet_link:
@@ -283,6 +327,8 @@ def get_average_nconc(model):
 Returns vectors with net delivery ratio and escape fraction for each link.
 """
 
+import networkx as nx
+
 def get_delivery_ratios(model):
     #unpack q
     q = model.mv.q
@@ -296,18 +342,51 @@ def get_delivery_ratios(model):
     outlet_link = model.nc.outlet_link
     n_links = model.nc.n_links
 
+    to_node = [x - 1 for x in to_node]  # Adjust all entries for 0-based indexing
+    outlet_link = outlet_link - 1
+
+    #print("to node (get_delivery_ratios)", to_node)
+
+    #loop detection!
+    def detect_cycles(to_node):
+        G = nx.DiGraph()
+        for src, dest in enumerate(to_node):
+            if dest != -1:  # Assuming -1 indicates no outgoing link
+                G.add_edge(src, dest)
+        try:
+            cycle = nx.find_cycle(G, orientation='original')
+            return cycle
+        except nx.NetworkXNoCycle:
+            return None
+
+    # Assuming to_node is your list
+    cycle = detect_cycles(to_node), 
+    print("Cycle detected:", cycle)
 
     # we set EF to 1.0 for links that aren't measuring any input
     #this section may need review later
     link_escape_frac = [1.0 if in_val == 0.0 else out/in_val for in_val, out in zip(N_conc_in, N_conc_ds)]
 
     link_delivery_ratio = [0.0] * n_links
+
+    visited_links = set()  # Track visited links to detect loops
+
     for l in range(n_links):
         ll = l
+        
+        #print(f"Current link: {ll}, Target link: {to_node[ll]}, Outlet link: {outlet_link}")
+
         link_delivery_ratio[l] = link_escape_frac[l]
+        
         while ll != outlet_link:
+            if ll in visited_links:
+                #print(f"Detected a loop involving link {ll}, breaking...")
+                break
+            
+            visited_links.add(ll)
             ll = to_node[ll]
             link_delivery_ratio[l] *= link_escape_frac[ll]
+        visited_links.clear()  # Reset for the next link
 
     return link_delivery_ratio, link_escape_frac
 
@@ -375,33 +454,3 @@ def compare_network_constants(sm1, sm2):
 Writes model results to csv file
 """
 
-
-def save_model_results(model: StreamModel, filename): #model is an instance of the class StreamModel
-    mv, mc, nc = model.mv, model.mc, model.nc
-
-    df = pd.DataFrame() #creates a new DF
-    df['link'] = range(1, nc.n_links + 1)
-    df['feature'] = nc.feature
-    df['q'] = mv.q
-    df['Q_in'] = mv.Q_in
-    df['Q_out'] = mv.Q_out
-    df['B'] = mv.B
-    df['H'] = mv.H
-    df['U'] = mv.U
-    df['Jden'] = mv.jden
-    df['cnrat'] = mv.cn_rat
-    df['N_conc_ri'] = mv.N_conc_ri
-    df['N_conc_us'] = mv.N_conc_us
-    df['N_conc_ds'] = mv.N_conc_ds
-    df['N_conc_in'] = mv.N_conc_in
-    df['C_conc_ri'] = mv.C_conc_ri
-    df['C_conc_us'] = mv.C_conc_us
-    df['C_conc_ds'] = mv.C_conc_ds
-    df['C_conc_in'] = mv.C_conc_in
-    df['mass_N_out'] = mv.mass_N_out
-    df['mass_C_out'] = mv.mass_C_out
-    ldr, lef = get_delivery_ratios(model)
-    df['link_DR'] = ldr
-    df['link_EF'] = lef
-
-    df.to_csv(filename, index=False) #writes model results to a csv file

@@ -15,7 +15,7 @@ import yaml #similar to YAML in Julia; json is a subset of YAML. they are data s
 from link_network import LinkNetwork, calc_routing_depth, get_routing_order, get_headwater_links #imports classes and functions from link_network.py
 from StreamModels import StreamModel
 
-from nnm_io import read_baseparams, read_network_table, init_model_vars
+from nnm_io import save_model_results, read_baseparams, read_network_table, init_model_vars
 
 from nnm import * #might be a better way to do this; Julia code seems to have imported all of nnm
 

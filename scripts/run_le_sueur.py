@@ -32,12 +32,12 @@ def resultpath(basename):
 def main():
     print("Starting main function.")
 
-    baseparams, n_links = read_baseparams('base_params.csv') #creates an instance of Model Constants
+    baseparams, n_links, outlet_link, gage_link, gage_flow = read_baseparams('base_params.csv') #creates an instance of Model Constants
 
-    network_constants_instance = read_network_table('network_table.csv', n_links) #creates an instance of Network Constants
+    network_constants_instance = read_network_table('network_table.csv', n_links, outlet_link, gage_link, gage_flow)
 
     #Create instances from imported data
-    model_variables_instance = init_model_vars(int(baseparams["n_links"])) #Creates an instance of Model Variables
+    model_variables_instance = init_model_vars(n_links) #Creates an instance of Model Variables
 
     # Create the StreamModel instance
     stream_model_instance = StreamModel(
@@ -60,5 +60,10 @@ def main():
     #results = sm.evaluate(flowregime)
     #print("weighted_avg_nconc:", results.weighted_avg_nconc())
     #print("weighted_outlet_nconc:", results.weighted_outlet_nconc())
+    # Check if the directory exists
+
 
 main()
+
+
+#it saved the test file to: C:\Users\gpcin\OneDrive - University of Kansas\data\LeSueur\results, which is not where I've been looking!
