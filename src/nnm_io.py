@@ -27,7 +27,7 @@ def read_baseparams(baseparams_file):
 
     # Extracting specific parameters for NetworkConstants configuration
     n_links = int(baseparams['n_links']) if 'n_links' in baseparams else 0
-    outlet_link = int(baseparams['outlet_link']) if 'outlet_link' in baseparams else -1
+    outlet_link = int(baseparams['outlet_link']) - 1 if 'outlet_link' in baseparams else -1
     gage_link = int(baseparams['gage_link']) - 1 if 'gage_link' in baseparams else -1
     gage_flow = float(baseparams['gage_flow']) if 'gage_flow' in baseparams else -1.0
 
@@ -61,7 +61,16 @@ def read_network_table(network_table, n_links, outlet_link, gage_link, gage_flow
     routing_order = sorted(range(n_links),
                            key=lambda x: (routing_depth[x], n_links - 1 - x),
                            reverse=True)
+    
+    # First, determine hw_links based on zero-based index directly
     hw_links = [x for x in range(n_links) if is_hw[x] == 1]
+
+    # Then, adjust the indices by subtracting 1 from each
+    #hw_links = [x - 1 for x in hw_links]
+
+    print("First link headwater status (should be False/0):", is_hw[0])
+    print("is_hw", is_hw)
+    print("hw_links", hw_links)
 
     #print('Routing order, freshly sorted (nnm_io)', routing_order)
     #print("hw_links (nnm_io)", hw_links)
@@ -173,7 +182,8 @@ def save_model_results(model: StreamModel, filename): #model is an instance of t
     mv, mc, nc = model.mv, model.mc, model.nc
 
     df = pd.DataFrame() #creates a new DF
-    df['link'] = range(1, nc.n_links + 1)
+    df['link'] = range(0, nc.n_links) #this makes it so that csv file output is consistent wtih Python indexing, but not consistent with Julia output.
+                                        #ex, otherwise, (1, nc.n_links + 1)
     df['feature'] = nc.feature
     df['q'] = mv.q
     df['Q_in'] = mv.Q_in

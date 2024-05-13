@@ -59,32 +59,58 @@ def assign_qQ(model, q_gage):
 
     contrib_q_per_area = q_gage / us_area[gage_link]
 
+    #checking to ensure the correct gage_link with correct parameters is used:
+    # print("gage_link", gage_link)
+    # print("q_gage", q_gage)
+    # print("us_area", us_area[gage_link])
+    # print("contrib_area", contrib_area[gage_link])
+    # print("Contrib q per area", contrib_q_per_area)
+    # print("to_node", to_node[gage_link])
+
     #print("Routing order (assing_qQ function):", routing_order)
 
     #print("Initial Q_in (before loop in assign_qQ):", Q_in)
 
+    iteration_count = 0  # Initialize the iteration counter
+
     for l in routing_order:
-        #print("Length of contrib_area:", len(contrib_area))
-        #print("Current index l:", l)
-        print(f"Processing link {l}, to_node: {to_node[l]}")
-        #print(f"Before: q[{to_node[l]}] = {q[to_node[l]]}, Q_in[{l}] = {Q_in[l]}")
+
     
         if l >= len(contrib_area):
-            print(f"Index {l} out of range for contrib_area with length {len(contrib_area)}")
+            #print(f"Index {l} out of range for contrib_area with length {len(contrib_area)}")
             continue  # Skip this iteration to avoid the IndexError
 
         q[l] = contrib_q_per_area * contrib_area[l]
         Q_out[l] = q[l] + Q_in[l]
         Q_in[to_node[l]] += Q_out[l]
 
+        # Debug output to check values
+        #print("is_hw[l]", is_hw[l])
+        # print("b4 loop")
+        # print("l", l)
+        # print("q[77]:", q[77])
+        # print("Q_in[77]:", Q_in[77])
+        # print("Q_out[77]:", Q_out[77]) 
+
+        iteration_count += 1  # Increment the counter
+        if iteration_count == 700:
+            break  # Break the loop after 2 iterations
+
         #print(f"After: Q_in[{to_node[l]}] = {Q_in[to_node[l]]}, Q_out[{l}] = {Q_out[l]}")
 
 
-    print('Outlet link (assign_qQ function)', outlet_link)
+    #print('Outlet link (assign_qQ function)', outlet_link)
 
     q[outlet_link] = contrib_q_per_area * contrib_area[outlet_link]
     Q_out[outlet_link] = q[outlet_link] + Q_in[outlet_link]
 
+
+    # Debug output to check values
+    print("after loop")
+    print("l", l)
+    print("q[77]:", q[77])
+    print("Q_in[77]:", Q_in[77])
+    print("Q_out[77]:", Q_out[77])    
 """
     assign_B!(model::StreamModel)
 
