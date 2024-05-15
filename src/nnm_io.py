@@ -65,16 +65,8 @@ def read_network_table(network_table, n_links, outlet_link, gage_link, gage_flow
     # First, determine hw_links based on zero-based index directly
     hw_links = [x for x in range(n_links) if is_hw[x] == 1]
 
-    # Then, adjust the indices by subtracting 1 from each
-    #hw_links = [x - 1 for x in hw_links]
+    to_node_adjusted = [x - 1 for x in df['to_node'].tolist()]
 
-    print("First link headwater status (should be False/0):", is_hw[0])
-    print("is_hw", is_hw)
-    print("hw_links", hw_links)
-
-    #print('Routing order, freshly sorted (nnm_io)', routing_order)
-    #print("hw_links (nnm_io)", hw_links)
-    #print("Outlet link (nnm_io)", outlet_link) 
 
     return NetworkConstants(
         n_links=n_links,
@@ -82,11 +74,11 @@ def read_network_table(network_table, n_links, outlet_link, gage_link, gage_flow
         gage_link=gage_link,
         gage_flow=gage_flow,
         feature=df['feature'].tolist(),
-        to_node=df['to_node'].tolist(),
+        to_node=to_node_adjusted,
         us_area=df['us_area'].tolist(),
         contrib_area=df['contrib_area'].tolist(),
         contrib_subwatershed=df['swat_sub'].tolist(),
-        contrib_n_load_factor=[1] * n_links,
+        contrib_n_load_factor=[1.0] * n_links,
         routing_order=routing_order,
         hw_links=hw_links,
         slope=df['slope'].tolist(),
