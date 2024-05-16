@@ -19,6 +19,7 @@ def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is t
         #print("attributes of model.nc:", attr, ':', value)
 
 
+
     if math.isnan(qgage):
         print('qgage is NaN, using default gage_flow from model.nc')
         assign_qQ(model, model.nc.gage_flow) #used if qgage is not provided
@@ -45,6 +46,7 @@ Returns a new `ModelVariables` instance with zero-initialized vectors.
 Routes water
 """
 
+
 def assign_qQ(model, q_gage):
     q = model.mv.q
     Q_in = model.mv.Q_in
@@ -58,32 +60,31 @@ def assign_qQ(model, q_gage):
 
     contrib_q_per_area = q_gage / us_area[gage_link]
 
-    # Print initial debug information
-    #print("assign_qQ function initialized")
-    #print(f"gage_link: {gage_link}, q_gage: {q_gage}")
-    #print(f"us_area at gage_link: {us_area[gage_link]}, contrib_area at gage_link: {contrib_area[gage_link]}")
-    print(f"Contrib q per area: {contrib_q_per_area}")
-    #print(f"Routing order: {routing_order}")
+    #print("Routing order (assing_qQ function):", routing_order)
 
-    #print("to node", to_node)
+    #print("Initial Q_in (before loop in assign_qQ):", Q_in)
 
-    for l in routing_order[:-1]: #skipping the last element, as outlet_link is handled separately anyway
-        # if l >= len(contrib_area):
-        #     continue  # Skip this iteration to avoid the IndexError
+    for l in routing_order:
+        #print("Length of contrib_area:", len(contrib_area))
+        #print("Current index l:", l)
+        #print(f"Processing link {l}, to_node: {to_node[l]}")
+        #print(f"Before: q[{to_node[l]}] = {q[to_node[l]]}, Q_in[{l}] = {Q_in[l]}")
+    
+        if l >= len(contrib_area):
+            print(f"Index {l} out of range for contrib_area with length {len(contrib_area)}")
+            continue  # Skip this iteration to avoid the IndexError
 
         q[l] = contrib_q_per_area * contrib_area[l]
         Q_out[l] = q[l] + Q_in[l]
         Q_in[to_node[l]] += Q_out[l]
-        #print("to node 0", to_node[0])
 
-    # Handling the outlet link specifically
+        #print(f"After: Q_in[{to_node[l]}] = {Q_in[to_node[l]]}, Q_out[{l}] = {Q_out[l]}")
+
+
+    print('Outlet link (assign_qQ function)', outlet_link)
+
     q[outlet_link] = contrib_q_per_area * contrib_area[outlet_link]
     Q_out[outlet_link] = q[outlet_link] + Q_in[outlet_link]
-
-    print("to node (outlet link) assign Q", to_node[outlet_link])
-
-
-
 
 """
     assign_B!(model::StreamModel)
@@ -180,13 +181,32 @@ def determine_U_H_wetland_hydraulics(model):
 Routes N and C, computes denitrification.
 """
 def compute_N_C_conc(model, contrib_n_load_reduction=None):
+    # Initialize counters
+    counters = {
+        "calc_N_conc_us": 0,
+        "calc_C_conc_us": 0,
+        "add_N_conc_ri": 0,
+        "add_C_conc_ri": 0,
+        "update_mass_N_in": 0,
+        "update_mass_C_in": 0,
+        "calc_N_conc_in": 0,
+        "calc_C_conc_in": 0,
+        "calc_jden": 0,
+        "update_mass_C_out": 0,
+        "update_mass_N_out": 0,
+        "calc_N_conc_ds": 0,
+        "calc_C_conc_ds": 0,
+        "route_N_mass_downstream": 0,
+        "route_C_mass_downstream": 0,
+        "Q_in_zero": 0  # Counter for Q_in[l] == 0
+
+    }
+
     # Unpack mc
     agN = model.mc.agN
     agC = model.mc.agC
     agCN = model.mc.agCN
     Jleach = model.mc.Jleach
-
-    # Unpack q
 
     # Unpack mv using attribute access
     q = model.mv.q
@@ -219,75 +239,88 @@ def compute_N_C_conc(model, contrib_n_load_reduction=None):
     pEM = model.nc.pEM
     contrib_n_load_factor = model.nc.contrib_n_load_factor
 
-    if max(routing_order) >= len(Q_in):
-        raise ValueError("routing_order contains an index out of range for Q_in")
-    
+    # print("Length of routing_order:", len(routing_order))
+    # print("Length of Q_in:", len(Q_in))
+
+    # print("Minimum index in routing_order:", min(routing_order))
+    # print("Maximum index in routing_order:", max(routing_order))
+
+    # if max(routing_order) >= len(Q_in):
+    #     raise ValueError("routing_order contains an index out of range for Q_in")
+
     if contrib_n_load_reduction is None:
         contrib_n_load = contrib_n_load_factor
-    else:
-        contrib_n_load = contrib_n_load_factor * contrib_n_load_reduction
-
 
     for l in routing_order:
+        # bookkeeping
 
-        print(f"(l, Mass_N_in[2]) = ({l}, {mass_N_in[2]})")
-
-        # calc input from contributing areas
-        N_conc_ri[l] = agN * fainN[l] * contrib_n_load[l]
-        C_conc_ri[l] = agC * fainC[l] + agCN * fainN[l]
-
-        mass_N_in[l] += N_conc_ri[l] * q[l] # really weird that this is wrong given that q[l] and N_conc_ri[l] are both right...
-
-        mass_C_in[l] += (C_conc_ri[l] * q[l]) + (Jleach * wetland_area[l] * pEM[l] * 1.0e-5)
-
-        #this conditional expression is necessary in python but not julia bc julia defaults to NaN or inf when dividing by zero but python doesnt'
         if Q_in[l] == 0:
-            N_conc_us[l] = 0  # Assign NaN or another placeholder to indicate no calculation was possible.
+            N_conc_us[l] = 0
             C_conc_us[l] = 0
+            counters["Q_in_zero"] += 1
 
         else:
             N_conc_us[l] = mass_N_in[l] / Q_in[l]
+            counters["calc_N_conc_us"] += 1
             C_conc_us[l] = mass_C_in[l] / Q_in[l]
+            counters["calc_C_conc_us"] += 1
 
+        N_conc_ri[l] = agN * fainN[l] * contrib_n_load[l]
+        counters["add_N_conc_ri"] += 1
+        C_conc_ri[l] = agC * fainC[l] + agCN * fainN[l]
+        counters["add_C_conc_ri"] += 1
+
+        mass_N_in[l] += N_conc_ri[l] * q[l]
+        counters["update_mass_N_in"] += 1
+        mass_C_in[l] += (C_conc_ri[l] * q[l]) + (Jleach * wetland_area[l] * pEM[l] * 1.0e-5)
+        counters["update_mass_C_in"] += 1
 
         N_conc_in[l] = mass_N_in[l] / (Q_in[l] + q[l])
+        counters["calc_N_conc_in"] += 1
         C_conc_in[l] = mass_C_in[l] / (Q_in[l] + q[l])
+        counters["calc_C_conc_in"] += 1
 
-        # calculate denitrification rate
         if mass_N_in[l] == 0.0:
             jden[l] = 0
         else:
             cn_rat[l] = mass_C_in[l] / mass_N_in[l]
             if cn_rat[l] >= 1:
-                jden[l] = (11.5*np.sqrt(N_conc_in[l]))/3600
+                jden[l] = (11.5 * np.sqrt(N_conc_in[l])) / 3600
             else:
-                jden[l] = (3.5*C_conc_in[l])/3600
-
+                jden[l] = (3.5 * C_conc_in[l]) / 3600
+            counters["calc_jden"] += 1
 
         mass_C_out[l] = max(0, mass_C_in[l] - jden[l] * B[l] * link_len[l] * 1.0e-3)
+        counters["update_mass_C_out"] += 1
         mass_N_out[l] = max(0, mass_N_in[l] - jden[l] * B[l] * link_len[l] * 1.0e-3)
+        counters["update_mass_N_out"] += 1
 
-        # bookkeeping: downstream concentration
+        # if Q_out[l] == 0: #it wouldn't be a link if there wasn't q out
+        #     N_conc_ds[l] = 0
+        #     C_conc_ds[l] = 0
+        # else:
         if Q_out[l] == 0:
-            N_conc_ds[l] = np.nan
-            C_conc_ds[l] = np.nan
-        else:
-            N_conc_ds[l] = mass_N_out[l] / Q_out[l]
-            C_conc_ds[l] = mass_C_out[l] / Q_out[l]
+            print(f"Unexpected zero Q_out at link {l}")
 
-        if l == 2:  # Manually adjust mass_N_in after l=2
-            mass_N_in[2] = 1.192  # This value should be the known good value from Julia
+        N_conc_ds[l] = mass_N_out[l] / Q_out[l]
+        counters["calc_N_conc_ds"] += 1
+        C_conc_ds[l] = mass_C_out[l] / Q_out[l]
+        counters["calc_C_conc_ds"] += 1
 
-        # route N and C mass downstream
-        if l == outlet_link:
-            #print(f"Before downstream update: to_node[{l}]={to_node[l]}, mass_N_in[{to_node[l]}]={mass_N_in[to_node[l]]}")
+        if l != outlet_link:
             mass_N_in[to_node[l]] += mass_N_out[l]
+            counters["route_N_mass_downstream"] += 1
             mass_C_in[to_node[l]] += mass_C_out[l]
-            #print(f"After downstream update: to_node[{l}]={to_node[l]}, mass_N_in[{to_node[l]}]={mass_N_in[to_node[l]]}")
-    
+            counters["route_C_mass_downstream"] += 1
 
-    print("Mass_N_in[2] ", mass_N_in[2])
-    print("Mass_N_in ", mass_N_in)
+    # Print the lengths
+    # print("The length of N_conc_ri is:", len(N_conc_ri))
+    # print("The length of mass_N_in is:", len(mass_N_in))
+    # print("The length of q is:", len(q))
+
+    # Print the counters to see how many times each calculation was executed
+    for key, count in counters.items():
+        print(f"{key}: {count}")
 
 
 #= Solution querying functions =#

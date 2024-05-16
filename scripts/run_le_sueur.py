@@ -66,4 +66,3 @@ def main():
 main()
 
 
-#it saved the test file to: C:\Users\gpcin\OneDrive - University of Kansas\data\LeSueur\results, which is not where I've been looking!

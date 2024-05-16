@@ -4,8 +4,6 @@ from nnm import get_delivery_ratios
 import pickle
 import pandas as pd
 
-#check working directory -- right now the code's working directory is the directory containing the local repo 
-#would be better to provide an absolute path for future reference 
 import os
 print("Current working directory:", os.getcwd())
 print("Does the file exist?", os.path.exists('base_params.csv'))
@@ -19,7 +17,6 @@ should be structured as follows:
 * baseparams_file: columns "variable" and "value".
 * network_file: many more columns.
 """
-##NEW approach, changing the functions that read parameters to directly return class instances
 
 def read_baseparams(baseparams_file):
     df = pd.read_csv(baseparams_file, header=0, index_col=0)
@@ -122,8 +119,6 @@ def init_model_vars(n_links):
 
 "Load either a YAML or CSV (legacy) baseparams file to a Dict"
 
-#this part has not been double checked to make sure it's actually doing what Julia code did
-
 
 import yaml
 import csv
@@ -174,8 +169,7 @@ def save_model_results(model: StreamModel, filename): #model is an instance of t
     mv, mc, nc = model.mv, model.mc, model.nc
 
     df = pd.DataFrame() #creates a new DF
-    df['link'] = range(0, nc.n_links) #this makes it so that csv file output is consistent wtih Python indexing, but not consistent with Julia output.
-                                        #ex, otherwise, (1, nc.n_links + 1)
+    df['link'] = range(0, nc.n_links) 
     df['feature'] = nc.feature
     df['q'] = mv.q
     df['Q_in'] = mv.Q_in
@@ -215,10 +209,10 @@ def save_model_results(model: StreamModel, filename): #model is an instance of t
     except Exception as e:
         print(f"Failed to write test file: {e}")
 
-    # Now attempt to write your actual output file
+    # Now attempt to write  actual output file
     output_file_path = os.path.join(results_dir, 'base_results.csv')
     try:
-        # Assuming 'df' is your DataFrame
+        # Assuming 'df' is DataFrame
         df.to_csv(output_file_path, index=False)
         print(f"Results successfully saved to {output_file_path}")
     except Exception as e:

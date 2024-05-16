@@ -15,8 +15,6 @@ class ModelConstants:
         self.Jleach = Jleach
         print(f"ModelConstants instance created with a1={a1}, a2={a2}, ...")
 
-
-
 class NetworkConstants:
     def __init__(self, n_links, outlet_link, gage_link, gage_flow, feature, to_node, us_area, contrib_area, contrib_subwatershed, contrib_n_load_factor, routing_order, hw_links, slope, link_len, wetland_area, pEM, fainN, fainC, B_gage=-1, B_us_area=-1.0):
         self.n_links = n_links
@@ -41,7 +39,6 @@ class NetworkConstants:
         self.B_us_area = B_us_area
         print(f"NetworkConstants instance created with n_links={n_links}, outlet_link={outlet_link}, ...")
 
-
 class ModelVariables:
     def __init__(self, q, Q_in, Q_out, B, U, H, N_conc_ri, N_conc_us, N_conc_ds, N_conc_in, C_conc_ri, C_conc_us, C_conc_ds, C_conc_in, mass_N_in, mass_N_out, mass_C_in, mass_C_out, cn_rat, jden):
         self.q = q
@@ -64,8 +61,6 @@ class ModelVariables:
         self.mass_C_out = mass_C_out
         self.cn_rat = cn_rat
         self.jden = jden
-        #print(f"ModelVariables instance created with q={q}, Q_in={Q_in}, ...")
-
 
 class StreamModel:
     def __init__(self, nc: NetworkConstants, mv: ModelVariables, mc: ModelConstants):
@@ -75,8 +70,7 @@ class StreamModel:
         print(f"StreamModel instance created with NetworkConstants={nc}, ModelVariables={mv}, ModelConstants={mc}")
 
 
-#WHEN WE INTRODUCE FLOW REGIMES BACK INTO THE MODEL, THEN THIS IS NECESSARY. FOR NOW IT IS DRIVING ME NUTS.
-
+#Only necessary when introducing FlowRegimes back into the model:
     # def reset_model_vars(self):
     # #reset all model vars to 0.0
     #     self.mv.q = 0.0
