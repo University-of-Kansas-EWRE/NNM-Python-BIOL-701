@@ -3,6 +3,7 @@ from StreamModels import ModelConstants, ModelVariables, NetworkConstants, Strea
 from nnm import get_delivery_ratios
 import pickle
 import pandas as pd
+import numpy as np
 
 import os
 print("Current working directory:", os.getcwd())
@@ -64,6 +65,8 @@ def read_network_table(network_table, n_links, outlet_link, gage_link, gage_flow
 
     to_node_adjusted = [x - 1 for x in df['to_node'].tolist()]
 
+    if outlet_link >= 0 and outlet_link < len(to_node_adjusted):
+        to_node_adjusted[outlet_link] = n_links + 1 #we want to ensure that to_node for the outlet link is always out of range for the network (no accidental routing)
 
     return NetworkConstants(
         n_links=n_links,
@@ -88,7 +91,6 @@ def read_network_table(network_table, n_links, outlet_link, gage_link, gage_flow
         B_us_area=df.get('B_us_area', -1.0)
     )
   
-
 def init_model_vars(n_links):
     print("Initializing model variables...")
     # Initialize all variables
@@ -190,7 +192,7 @@ def save_model_results(model: StreamModel, filename): #model is an instance of t
     df['mass_N_out'] = mv.mass_N_out
     df['mass_C_out'] = mv.mass_C_out
     ldr, lef = get_delivery_ratios(model)
-    df['link_DR'] = ldr
+    #df['link_DR'] = ldr
     df['link_EF'] = lef
 
     df.to_csv(filename, index=False) #writes model results to a csv file

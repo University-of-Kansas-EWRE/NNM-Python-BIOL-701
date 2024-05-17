@@ -10,14 +10,9 @@ def nnm_eval(model, qgage=math.nan, contrib_n_load_reduction=None): # qgage is t
     print(f'Initial qgage value: {qgage}')
 
 
-    #I think the problem is right in front of me, as edivdenced by this piece of code, but I just don't udnerstand it enough
-    #for attr, value in vars(model.nc).items():
-        #print(attr, ':', value)
-
     for attr in dir(model.nc):
         value = getattr(model.nc, attr)
         #print("attributes of model.nc:", attr, ':', value)
-
 
 
     if math.isnan(qgage):
@@ -64,28 +59,30 @@ def assign_qQ(model, q_gage):
 
     #print("Initial Q_in (before loop in assign_qQ):", Q_in)
 
-    for l in routing_order:
-        #print("Length of contrib_area:", len(contrib_area))
-        #print("Current index l:", l)
-        #print(f"Processing link {l}, to_node: {to_node[l]}")
-        #print(f"Before: q[{to_node[l]}] = {q[to_node[l]]}, Q_in[{l}] = {Q_in[l]}")
+    print("to node of 482", to_node[482])
     
-        if l >= len(contrib_area):
-            print(f"Index {l} out of range for contrib_area with length {len(contrib_area)}")
-            continue  # Skip this iteration to avoid the IndexError
+    for l in routing_order:
 
         q[l] = contrib_q_per_area * contrib_area[l]
         Q_out[l] = q[l] + Q_in[l]
-        Q_in[to_node[l]] += Q_out[l]
+        
+        # Ensure to_node[l] is within valid range and not the outlet link
+        if 0 <= to_node[l] < len(Q_in):
+            Q_in[to_node[l]] += Q_out[l]
 
-        #print(f"After: Q_in[{to_node[l]}] = {Q_in[to_node[l]]}, Q_out[{l}] = {Q_out[l]}")
-
-
-    print('Outlet link (assign_qQ function)', outlet_link)
+        print("l, Q_in 641", l, Q_in[641])
 
     q[outlet_link] = contrib_q_per_area * contrib_area[outlet_link]
     Q_out[outlet_link] = q[outlet_link] + Q_in[outlet_link]
 
+    # print("Final Q_in[641]", Q_in[641])
+    # print("Final Q_out[641]", Q_out[641])
+    # print("Final Q_in:", Q_in)
+    # print("Final Q_out:", Q_out)
+    # print("Final q:", q)
+    #print("to_node", to_node)
+
+    #print("routing order", routing_order)
 """
     assign_B!(model::StreamModel)
 
@@ -413,16 +410,18 @@ def get_delivery_ratios(model):
         
         #print(f"Current link: {ll}, Target link: {to_node[ll]}, Outlet link: {outlet_link}")
 
-        link_delivery_ratio[l] = link_escape_frac[l]
+        #link_delivery_ratio[l] = link_escape_frac[l]
         
         while ll != outlet_link:
-            if ll in visited_links:
-                #print(f"Detected a loop involving link {ll}, breaking...")
+            if ll in visited_links or ll < 0 or ll >= n_links:
                 break
-            
+
             visited_links.add(ll)
             ll = to_node[ll]
-            link_delivery_ratio[l] *= link_escape_frac[ll]
+
+            if ll >= 0 and ll < n_links:
+                link_delivery_ratio[l] *= link_escape_frac[ll]
+        
         visited_links.clear()  # Reset for the next link
 
     return link_delivery_ratio, link_escape_frac
